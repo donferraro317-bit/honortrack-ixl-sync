@@ -39,3 +39,31 @@ def ixl_connect_page(token: str):
     </body>
     </html>
     """
+
+from threading import Thread
+from playwright.sync_api import sync_playwright
+
+
+@app.get("/ixl-connect-start/{token}")
+def start_ixl_login(token: str):
+
+    def run():
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=False)
+            context = browser.new_context()
+
+            page = context.new_page()
+            page.goto("https://www.ixl.com/signin")
+
+            # wait for user to login manually
+            page.wait_for_timeout(60000)
+
+            context.storage_state(path="auth/ixl_state.json")
+
+            browser.close()
+
+            CONNECT_SESSIONS[token]["status"] = "connected"
+
+    Thread(target=run).start()
+
+    return {"message": "Login window started. Complete login within 60 seconds."}
