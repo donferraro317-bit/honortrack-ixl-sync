@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HonorTrack — IXL Sync Starter</title>
+  <style>
+    :root{
+      --bg:#0b1020; --text:#e7ecff; --muted:#aab3d6; --line:#22305e;
+      --card1:rgba(255,255,255,.06); --card2:rgba(255,255,255,.03);
+      --blue:#2e6cff; --blue2:#4aa3ff; --gold1:#e4c277; --gold2:#caa14d;
+      --ok:#00ff3b; --bad:#ff4a4a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(900px 500px at 20% 0%, #13214a 0%, rgba(19,33,74,0) 55%),
+        radial-gradient(900px 500px at 90% 10%, #1b2b63 0%, rgba(27,43,99,0) 55%),
+        var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    .grid{display:grid;grid-template-columns:380px 1fr;gap:14px}
+    .card{
+      background:linear-gradient(180deg,var(--card1),var(--card2));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      padding:14px;
+      box-shadow:0 10px 24px rgba(0,0,0,.35);
+    }
+    .sectionTitle{margin:0 0 10px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.10em}
+    .field{display:grid;gap:6px;margin-top:12px}
+    .field label{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    input,select,textarea{
+      width:100%;padding:11px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.06);color:var(--text);outline:none;font-size:13px;
+    }
+    textarea{min-height:96px;resize:vertical}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    button{
+      border:1px solid rgba(255,255,255,.15);cursor:pointer;border-radius:10px;
+      padding:10px 12px;font-weight:800;font-size:13px;
+    }
+    .btnBlue{background:linear-gradient(180deg,var(--blue2),var(--blue));color:white}
+    .btnGold{background:linear-gradient(180deg,var(--gold1),var(--gold2));color:#08152a}
+    .btnGhost{background:rgba(255,255,255,.08);color:var(--text)}
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);font-size:12px
+    }
+    .log{
+      white-space:pre-wrap;font-size:12px;line-height:1.4;background:rgba(2,6,17,.65);
+      border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px;min-height:300px;max-height:65vh;overflow:auto;
+    }
+    table{width:100%;border-collapse:collapse;font-size:12px;border:1px solid rgba(255,255,255,.10)}
+    th,td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+    th{background:rgba(4,8,18,.96);position:sticky;top:0}
+    .tableWrap{max-height:36vh;overflow:auto;border-radius:12px}
+    .muted{color:var(--muted)}
+    @media (max-width: 1000px){ .grid{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="grid">
+      <section class="card">
+        <div class="sectionTitle">Actions</div>
+
+        <div class="field">
+          <label for="teacherId">Teacher ID</label>
+          <input id="teacherId" placeholder="Paste teacher UUID" />
+        </div>
+
+        <div class="field">
+          <label for="scoreUrl">One ScoreURL</label>
+          <textarea id="scoreUrl" placeholder="Paste one ScoreURL from IXL_Assignments"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="sampleLimit">Assignment sample size</label>
+          <select id="sampleLimit">
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+
+        <div class="actions">
+          <button class="btnGhost" id="btnConnect">Connect IXL</button>
+          <button class="btnGold" id="btnTestOne">Test One ScoreURL</button>
+          <button class="btnGold" id="btnRunSample">Run Assignment Sample</button>
+          <button class="btnBlue" id="btnRefresh">Refresh Status</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <span class="pill" id="pillHealth">Backend: unknown</span>
+          <span class="pill" id="pillSession">Session: unknown</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="sectionTitle">Job log</div>
+        <div id="log" class="log">HonorTrack IXL Sync Starter ready.</div>
+      </section>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="sectionTitle">Recent exported files</div>
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Teacher</th>
+              <th>Class</th>
+              <th>Skill</th>
+              <th>File</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody">
+            <tr><td colspan="6" class="muted">No exports yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = ""; // same-origin because FastAPI serves this page
+
+    const $ = (id) => document.getElementById(id);
+
+    function appendLog(text){
+      const node = $("log");
+      const stamp = new Date().toLocaleTimeString();
+      node.textContent += `\n[${stamp}] ${text}`;
+      node.scrollTop = node.scrollHeight;
+    }
+
+    function setPill(id, text){
+      $(id).textContent = text;
+    }
+
+    async function safeJson(res){
+      const text = await res.text();
+      try { return JSON.parse(text); } catch { return { raw: text }; }
+    }
+
+    async function getJson(path){
+      const res = await fetch(API_BASE + path);
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data.detail || data.error || `Request failed (${res.status})`);
+      return data;
+    }
+
+    async function postJson(path, payload){
+      const res = await fetch(API_BASE + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {})
+      });
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(data.detail || data.error || `Request failed (${res.status})`);
+      return data;
+    }
+
+    function renderResults(rows){
+      const body = $("resultsBody");
+      if (!rows.length){
+        body.innerHTML = `<tr><td colspan="6" class="muted">No exports yet.</td></tr>`;
+        return;
+      }
+      body.innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.when || ""}</td>
+          <td>${r.teacher_id || ""}</td>
+          <td>${r.class_name || ""}</td>
+          <td>${r.skill_code || ""}</td>
+          <td>${r.file_name || ""}</td>
+          <td>${r.status || ""}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function refreshStatus(){
+      try {
+        const health = await getJson("/api/ixl/health");
+        setPill("pillHealth", `Backend: ${health.status || "ok"}`);
+        setPill("pillSession", `Session: ${health.session || "unknown"}`);
+
+        const jobs = await getJson("/api/ixl/jobs/recent");
+        const files = [];
+        (jobs.jobs || []).forEach(job => (job.exports || []).forEach(x => files.push(x)));
+        renderResults(files);
+        appendLog("Status refreshed.");
+      } catch (e) {
+        appendLog(`Refresh failed: ${e.message}`);
+      }
+    }
+
+    $("btnConnect").addEventListener("click", async () => {
+      try {
+        const data = await postJson("/api/ixl/connect", {});
+        appendLog(data.message || "Connect started.");
+      } catch (e) {
+        appendLog(`Connect failed: ${e.message}`);
+      }
+    });
+
+    $("btnTestOne").addEventListener("click", async () => {
+      const teacherId = $("teacherId").value.trim();
+      const scoreUrl = $("scoreUrl").value.trim();
+      if (!scoreUrl) {
+        appendLog("Enter one ScoreURL first.");
+        return;
+      }
+      try {
+        const data = await postJson("/api/ixl/test-one", {
+          teacher_id: teacherId || null,
+          score_url: scoreUrl
+        });
+        appendLog(data.message || "Test-one job queued.");
+      } catch (e) {
+        appendLog(`Test-one failed: ${e.message}`);
+      }
+    });
+
+    $("btnRunSample").addEventListener("click", async () => {
+      const teacherId = $("teacherId").value.trim();
+      const limit = Number($("sampleLimit").value || 5);
+      if (!teacherId) {
+        appendLog("Enter Teacher ID first.");
+        return;
+      }
+      try {
+        const data = await postJson("/api/ixl/export-sample", { teacher_id: teacherId, limit });
+        appendLog(data.message || "Export-sample job queued.");
+      } catch (e) {
+        appendLog(`Export-sample failed: ${e.message}`);
+      }
+    });
+
+    $("btnRefresh").addEventListener("click", refreshStatus);
+    refreshStatus();
+  </script>
+</body>
+</html>

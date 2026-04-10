@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: honortrack-ixl-sync
+    runtime: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /api/ixl/health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: IXL_CONNECT_SECRET
+        generateValue: true
