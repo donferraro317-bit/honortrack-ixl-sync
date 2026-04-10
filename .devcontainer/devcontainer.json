@@ -1,0 +1,10 @@
+{
+  "image": "mcr.microsoft.com/playwright/python:v1.52.0-noble",
+  "forwardPorts": [6080],
+  "features": {
+    "desktop-lite": {
+      "webPort": "6080"
+    }
+  },
+  "postCreateCommand": "pip install --no-cache-dir -r requirements.txt || true"
+}
