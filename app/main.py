@@ -17,3 +17,25 @@ def connect_ixl():
         "message": "Open this link to connect IXL",
         "login_url": login_url
     }
+
+from fastapi.responses import HTMLResponse
+
+@app.get("/ixl-connect/{token}", response_class=HTMLResponse)
+def ixl_connect_page(token: str):
+
+    if token not in CONNECT_SESSIONS:
+        return "<h1>Invalid session</h1>"
+
+    return f"""
+    <html>
+    <body style="font-family:sans-serif;background:#0b1020;color:white;text-align:center;padding-top:80px;">
+        <h1>Connect IXL</h1>
+        <p>Click below to log into IXL</p>
+
+        <a href="/ixl-connect-start/{token}" 
+           style="padding:12px 20px;background:#2e6cff;color:white;text-decoration:none;border-radius:8px;">
+           Login to IXL
+        </a>
+    </body>
+    </html>
+    """
